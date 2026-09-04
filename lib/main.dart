@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'config.dart';
 
 void main() {
-  runApp(const LaPaixDuCoeurClientApp());
+  runApp(const LaPaixDuCoeurApp());
 }
 
-class LaPaixDuCoeurClientApp extends StatelessWidget {
-  const LaPaixDuCoeurClientApp({super.key});
+class LaPaixDuCoeurApp extends StatelessWidget {
+  const LaPaixDuCoeurApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,32 +15,32 @@ class LaPaixDuCoeurClientApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      home: const HomeScreen(),
+      home: const MainHomeScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class MainHomeScreen extends StatefulWidget {
+  const MainHomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<MainHomeScreen> createState() => _MainHomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _MainHomeScreenState extends State<MainHomeScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    const TransportHomeTab(),
-    const MarketHomeTab(),
+    const TransportTab(),
+    const MarketTab(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       app: AppBar(
-        title: Text(_currentIndex == 0 ? 'VTC & Transport' : 'Marché & E-commerce'),
+        title: Text(_currentIndex == 0 ? 'Transport & VTC' : 'Marché & E-commerce'),
         backgroundColor: Colors.green[700],
       ),
       body: _pages[_currentIndex],
@@ -66,8 +66,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class TransportHomeTab extends StatelessWidget {
-  const TransportHomeTab({super.key});
+class TransportTab extends StatelessWidget {
+  const TransportTab({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +76,9 @@ class TransportHomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Où souhaitez-vous aller ?', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text('Serveur : ${Config.serveurUrl}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          const SizedBox(height: 10),
+          const Text('Choisissez votre service :', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           Expanded(
             child: GridView.count(
@@ -84,9 +86,9 @@ class TransportHomeTab extends StatelessWidget {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               children: const [
-                ServiceCard(title: 'Taxi', icon: Icons.local_taxi, color: Colors.amber),
-                ServiceCard(title: 'Course', icon: Icons.directions_run, color: Colors.blue),
-                ServiceCard(title: 'Livraison', icon: Icons.local_shipping, color: Colors.orange),
+                ServiceTile(title: 'Taxi', icon: Icons.local_taxi, color: Colors.amber),
+                ServiceTile(title: 'Course', icon: Icons.directions_run, color: Colors.blue),
+                ServiceTile(title: 'Livraison', icon: Icons.local_shipping, color: Colors.orange),
               ],
             ),
           ),
@@ -96,8 +98,8 @@ class TransportHomeTab extends StatelessWidget {
   }
 }
 
-class MarketHomeTab extends StatelessWidget {
-  const MarketHomeTab({super.key});
+class MarketTab extends StatelessWidget {
+  const MarketTab({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -121,12 +123,12 @@ class MarketHomeTab extends StatelessWidget {
   }
 }
 
-class ServiceCard extends StatelessWidget {
+class ServiceTile extends StatelessWidget {
   final String title;
   final IconData icon;
   final Color color;
 
-  const ServiceCard({super.key, required this.title, required this.icon, required this.color});
+  const ServiceTile({super.key, required this.title, required this.icon, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -140,12 +142,12 @@ class ServiceCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircleAvatar(
-              radius: 30,
+              radius: 28,
               backgroundColor: color.withOpacity(0.2),
-              child: Icon(icon, size: 30, color: color),
+              child: Icon(icon, size: 28, color: color),
             ),
-            const SizedBox(height: 12),
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
