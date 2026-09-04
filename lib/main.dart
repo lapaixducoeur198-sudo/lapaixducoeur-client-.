@@ -39,7 +39,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      app: AppBar(
         title: Text(_currentIndex == 0 ? 'Transport & VTC' : 'Marché & E-commerce'),
         backgroundColor: Colors.green[700],
       ),
@@ -69,6 +69,34 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
 class TransportTab extends StatelessWidget {
   const TransportTab({super.key});
 
+  void _onServiceTap(BuildContext context, String serviceName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Commander : $serviceName'),
+          content: Text('Voulez-vous rechercher un chauffeur disponible pour une $serviceName ?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Recherche d’un $serviceName en cours...')),
+                );
+              },
+              child: const Text('Confirmer', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -85,10 +113,25 @@ class TransportTab extends StatelessWidget {
               crossAxisCount: 2,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              children: const [
-                ServiceTile(title: 'Taxi', icon: Icons.local_taxi, color: Colors.amber),
-                ServiceTile(title: 'Course', icon: Icons.directions_run, color: Colors.blue),
-                ServiceTile(title: 'Livraison', icon: Icons.local_shipping, color: Colors.orange),
+              children: [
+                ServiceTile(
+                  title: 'Taxi',
+                  icon: Icons.local_taxi,
+                  color: Colors.amber,
+                  onTap: () => _onServiceTap(context, 'Taxi'),
+                ),
+                ServiceTile(
+                  title: 'Course',
+                  icon: Icons.directions_run,
+                  color: Colors.blue,
+                  onTap: () => _onServiceTap(context, 'Course'),
+                ),
+                ServiceTile(
+                  title: 'Livraison',
+                  icon: Icons.local_shipping,
+                  color: Colors.orange,
+                  onTap: () => _onServiceTap(context, 'Livraison'),
+                ),
               ],
             ),
           ),
@@ -115,7 +158,11 @@ class MarketTab extends StatelessWidget {
             leading: const Icon(Icons.shopping_bag, color: Colors.green),
             title: Text(categories[index], style: const TextStyle(fontWeight: FontWeight.bold)),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {},
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Ouverture du rayon : ${categories[index]}')),
+              );
+            },
           ),
         );
       },
@@ -127,8 +174,15 @@ class ServiceTile extends StatelessWidget {
   final String title;
   final IconData icon;
   final Color color;
+  final VoidCallback onTap;
 
-  const ServiceTile({super.key, required this.title, required this.icon, required this.color});
+  const ServiceTile({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +190,7 @@ class ServiceTile extends StatelessWidget {
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
