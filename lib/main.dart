@@ -76,8 +76,6 @@ class TransportHomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Serveur connecté : ${Config.serveurUrl}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          const SizedBox(height: 20),
           const Text('Où souhaitez-vous aller ?', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           Expanded(
@@ -115,9 +113,7 @@ class MarketHomeTab extends StatelessWidget {
             leading: const Icon(Icons.shopping_bag, color: Colors.green),
             title: Text(categories[index], style: const TextStyle(fontWeight: FontWeight.bold)),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // Action pour ouvrir la catégorie
-            },
+            onTap: () {},
           ),
         );
       },
