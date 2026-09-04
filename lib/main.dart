@@ -39,7 +39,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      app: AppBar(
+      appBar: AppBar(
         title: Text(_currentIndex == 0 ? 'Transport & VTC' : 'Marché & E-commerce'),
         backgroundColor: Colors.green[700],
       ),
