@@ -23,9 +23,10 @@ jobs:
         run: |
           flutter create . --org com.lapaixducoeur --project-name lapaixducoeur_client --platforms=android
 
-      - name: Inject pubspec.yaml with Dependencies
+      - name: Write pubspec.yaml
         run: |
-          echo "name: lapaixducoeur_client
+          cat << 'EOF' > pubspec.yaml
+          name: lapaixducoeur_client
           description: A new Flutter project.
           publish_to: 'none'
           version: 1.0.0+1
@@ -47,12 +48,14 @@ jobs:
             flutter_lints: ^3.0.0
 
           flutter:
-            uses-material-design: true" > pubspec.yaml
+            uses-material-design: true
+          EOF
 
-      - name: Overwrite with Client Map Code
+      - name: Write main.dart
         run: |
           mkdir -p lib
-          echo "import 'package:flutter/material.dart';
+          cat << 'EOF' > lib/main.dart
+          import 'package:flutter/material.dart';
           import 'package:flutter_map/flutter_map.dart';
           import 'package:latlong2/latlong.dart';
           import 'package:geolocator/geolocator.dart';
@@ -133,11 +136,11 @@ jobs:
             Future<void> _commanderCourse() async {
               try {
                 final response = await http.post(
-                  Uri.parse('\${Config.serveurUrl}/api/rides'),
+                  Uri.parse('${Config.serveurUrl}/api/rides'),
                   headers: {'Content-Type': 'application/json'},
                   body: jsonEncode({
                     'clientName': 'Client Test',
-                    'pickup': '\${_currentPosition.latitude}, \${_currentPosition.longitude}',
+                    'pickup': '${_currentPosition.latitude}, ${_currentPosition.longitude}',
                     'destination': _destinationController.text,
                   }),
                 );
@@ -149,7 +152,7 @@ jobs:
                 }
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Erreur : \$e')),
+                  SnackBar(content: Text('Erreur : $e')),
                 );
               }
             }
@@ -235,13 +238,19 @@ jobs:
                 ),
               );
             }
-          }" > lib/main.dart
+          }
+          EOF
 
-          echo "class Config {
+      - name: Write config.dart
+        run: |
+          cat << 'EOF' > lib/config.dart
+          class Config {
             static const String serveurUrl = 'https://api.lapaixducoeur.com';
-          }" > lib/config.dart
+          }
+          EOF
 
-          flutter pub get
+      - name: Install Dependencies
+        run: flutter pub get
 
       - name: Build APK Release
         run: flutter build apk --release
