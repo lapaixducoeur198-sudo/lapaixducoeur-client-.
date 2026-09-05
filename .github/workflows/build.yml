@@ -19,9 +19,13 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Create Clean Flutter Project
+      - name: Create Clean Flutter Project in Temp Folder
         run: |
-          flutter create . --org com.lapaixducoeur --project-name lapaixducoeur_client --platforms=android
+          flutter create temp_app --org com.lapaixducoeur --project-name lapaixducoeur_client --platforms=android
+          cp -r temp_app/android ./
+          cp -r temp_app/ios ./ 2>/dev/null || true
+          cp -r temp_app/web ./ 2>/dev/null || true
+          rm -rf temp_app
 
       - name: Update pubspec.yaml Dependencies
         run: |
@@ -53,6 +57,7 @@ jobs:
 
       - name: Write Configuration and Main Code
         run: |
+          mkdir -p lib
           cat << 'EOF' > lib/config.dart
           class Config {
             static const String serveurUrl = 'https://api.lapaixducoeur.com';
