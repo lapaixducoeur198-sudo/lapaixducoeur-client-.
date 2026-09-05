@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -33,12 +34,11 @@ class ClientMapScreen extends StatefulWidget {
 }
 
 class _ClientMapScreenState extends State<ClientMapScreen> {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   LatLng _currentPosition = const LatLng(5.3600, -4.0083); // Position par défaut (Abidjan)
   bool _isLoadingLocation = true;
-  Set<Marker> _markers = {};
   
-  final TextEditingController _destinationController = TextEditingController(text: "Plateche, Abidjan");
+  final TextEditingController _destinationController = TextEditingController(text: "Plateau, Abidjan");
 
   @override
   void initState() {
@@ -46,7 +46,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _determinePosition();
   }
 
-  // Fonction pour récupérer la position GPS réelle de l'appareil
+  // Récupérer la position GPS réelle de l'appareil
   Future<void> _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -75,21 +75,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     
     setState(() {
       _currentPosition = LatLng(position.latitude, position.longitude);
-      _markers.add(
-        Marker(
-          markerId: const MarkerId('current_location'),
-          position: _currentPosition,
-          infoWindow: const InfoWindow(title: 'Ma position actuelle'),
-        ),
-      );
       _isLoadingLocation = false;
     });
 
-    _mapController?.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: _currentPosition, zoom: 15),
-      ),
-    );
+    try {
+      _mapController.move(_currentPosition, 15.0);
+    } catch (_) {}
   }
 
   // Envoyer la commande de course au serveur API
@@ -125,21 +116,38 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('La Paix du Cœur - Commande'),
+        title: const Text('La Paix du Cœur - Client'),
         backgroundColor: Colors.blueAccent,
       ),
       body: Stack(
         children: [
-          // Affichage de Google Maps
-          GoogleMap(
-            onMapCreated: (controller) => _mapController = controller,
-            initialCameraPosition: CameraPosition(
-              target: _currentPosition,
-              zoom: 14.0,
+          // Affichage de la carte OpenStreetMap gratuite
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _currentPosition,
+              initialZoom: 14.0,
             ),
-            markers: _markers,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.lapaixducoeur.client',
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: _currentPosition,
+                    width: 80,
+                    height: 80,
+                    child: const Icon(
+                      Icons.location_pin,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           
           // Indicateur de chargement GPS
