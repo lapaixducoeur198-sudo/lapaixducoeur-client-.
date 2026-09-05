@@ -19,17 +19,14 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Create Clean Flutter Project in Temp Folder
+      - name: Create Clean Flutter Project
         run: |
-          flutter create temp_project --org com.lapaixducoeur --project-name lapaixducoeur_client --platforms=android
-          rsync -avq temp_project/ .
-          rm -rf temp_project
+          flutter create . --org com.lapaixducoeur --project-name lapaixducoeur_client --platforms=android
 
-      - name: Generate Files via Python
+      - name: Update pubspec.yaml Dependencies
         run: |
-          python3 -c "
-          with open('pubspec.yaml', 'w') as f:
-              f.write('''name: lapaixducoeur_client
+          cat << 'EOF' > pubspec.yaml
+          name: lapaixducoeur_client
           description: A new Flutter project.
           publish_to: 'none'
           version: 1.0.0+1
@@ -52,18 +49,18 @@ jobs:
 
           flutter:
             uses-material-design: true
-          ''')
+          EOF
 
-          import os
-          os.makedirs('lib', exist_ok=True)
-
-          with open('lib/config.dart', 'w') as f:
-              f.write('''class Config {
+      - name: Write Configuration and Main Code
+        run: |
+          cat << 'EOF' > lib/config.dart
+          class Config {
             static const String serveurUrl = 'https://api.lapaixducoeur.com';
-          }''')
+          }
+          EOF
 
-          with open('lib/main.dart', 'w') as f:
-              f.write('''import 'package:flutter/material.dart';
+          cat << 'EOF' > lib/main.dart
+          import 'package:flutter/material.dart';
           import 'package:flutter_map/flutter_map.dart';
           import 'package:latlong2/latlong.dart';
           import 'package:geolocator/geolocator.dart';
@@ -138,11 +135,11 @@ jobs:
             Future<void> _commanderCourse() async {
               try {
                 final response = await http.post(
-                  Uri.parse('\${Config.serveurUrl}/api/rides'),
+                  Uri.parse('${Config.serveurUrl}/api/rides'),
                   headers: {'Content-Type': 'application/json'},
                   body: jsonEncode({
                     'clientName': 'Client Test',
-                    'pickup': '\${_currentPosition.latitude}, \${_currentPosition.longitude}',
+                    'pickup': '${_currentPosition.latitude}, ${_currentPosition.longitude}',
                     'destination': _destinationController.text,
                   }),
                 );
@@ -154,7 +151,7 @@ jobs:
                 }
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Erreur : \$e')),
+                  SnackBar(content: Text('Erreur : $e')),
                 );
               }
             }
@@ -241,8 +238,7 @@ jobs:
               );
             }
           }
-          ''')
-          "
+          EOF
 
       - name: Install Dependencies
         run: flutter pub get
