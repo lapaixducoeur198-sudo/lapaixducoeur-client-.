@@ -55,19 +55,24 @@ jobs:
             uses-material-design: true
           EOF
 
-      - name: Fix Min SDK Version in Gradle (Robust)
+      - name: Force Min SDK Version to 24 in build.gradle
         run: |
-          # Remplace toute occurrence de minSdkVersion par 21 dans le fichier build.gradle d'Android
           python3 -c "
           path = 'android/app/build.gradle'
           with open(path, 'r') as f:
               content = f.read()
-          # Remplacement de flutter.minSdkVersion ou autres valeurs par 21
+
+          # On remplace minSdkVersion peu importe sa syntaxe initiale par 24
           import re
-          content = re.sub(r'minSdkVersion\s+.*', 'minSdkVersion 21', content)
+          new_content = re.sub(r'minSdkVersion\s+.*', 'minSdkVersion 24', content)
+          
+          if new_content == content:
+              # Si aucune correspondance exacte, on cherche flutter.minSdkVersion
+              new_content = content.replace('minSdkVersion flutter.minSdkVersion', 'minSdkVersion 24')
+
           with open(path, 'w') as f:
-              f.write(content)
-          print('minSdkVersion mis à jour avec succès à 21')
+              f.write(new_content)
+          print('Fichier build.gradle mis à jour avec minSdkVersion 24')
           "
 
       - name: Write Configuration and Main Code
@@ -214,44 +219,44 @@ jobs:
                         child: const Center(child: CircularProgressIndicator(color: Colors.white)),
                       ),
                     Positioned(
-                      bottom: 20,
-                      left: 20,
-                      right: 20,
-                      child: Card(
-                        elevation: 6,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text('Où allons-nous ?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: _destinationController,
-                                decoration: InputDecoration(
-                                  labelText: 'Destination',
-                                  prefixIcon: const Icon(Icons.location_on, color: Colors.red),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                              ),
-                              const SizedBox(height: 15),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blueAccent,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        bottom: 20,
+                        left: 20,
+                        right: 20,
+                        child: Card(
+                          elevation: 6,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('Où allons-nous ?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: _destinationController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Destination',
+                                    prefixIcon: const Icon(Icons.location_on, color: Colors.red),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                                   ),
-                                  onPressed: _commanderCourse,
-                                  child: const Text('Commander un Chauffeur', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 15),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blueAccent,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                    onPressed: _commanderCourse,
+                                    child: const Text('Commander un Chauffeur', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
                     ),
                   ],
                 ),
