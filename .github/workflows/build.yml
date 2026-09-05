@@ -19,9 +19,11 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Create Clean Flutter Project
+      - name: Create Clean Flutter Project in Temp Folder
         run: |
-          flutter create . --force --org com.lapaixducoeur --project-name lapaixducoeur_client --platforms=android
+          flutter create temp_project --org com.lapaixducoeur --project-name lapaixducoeur_client --platforms=android
+          rsync -avq temp_project/ .
+          rm -rf temp_project
 
       - name: Generate Files via Python
         run: |
