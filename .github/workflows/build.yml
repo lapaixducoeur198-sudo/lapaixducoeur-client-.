@@ -55,12 +55,20 @@ jobs:
             uses-material-design: true
           EOF
 
-      - name: Fix Min SDK Version in Gradle
+      - name: Fix Min SDK Version in Gradle (Robust)
         run: |
-          # Modification du minSdkVersion à 21 dans build.gradle pour supporter les plugins récents
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle || true
-          sed -i 's/minSdkVersion 16/minSdkVersion 21/g' android/app/build.gradle || true
-          sed -i 's/minSdkVersion 19/minSdkVersion 21/g' android/app/build.gradle || true
+          # Remplace toute occurrence de minSdkVersion par 21 dans le fichier build.gradle d'Android
+          python3 -c "
+          path = 'android/app/build.gradle'
+          with open(path, 'r') as f:
+              content = f.read()
+          # Remplacement de flutter.minSdkVersion ou autres valeurs par 21
+          import re
+          content = re.sub(r'minSdkVersion\s+.*', 'minSdkVersion 21', content)
+          with open(path, 'w') as f:
+              f.write(content)
+          print('minSdkVersion mis à jour avec succès à 21')
+          "
 
       - name: Write Configuration and Main Code
         run: |
