@@ -1,209 +1,204 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'config.dart';
 
 void main() {
-  runApp(const LaPaixDuCoeurApp());
+  runApp(const LaPaixDuCoeurClientApp());
 }
 
-class LaPaixDuCoeurApp extends StatelessWidget {
-  const LaPaixDuCoeurApp({super.key});
+class LaPaixDuCoeurClientApp extends StatelessWidget {
+  const LaPaixDuCoeurClientApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'La Paix du Cœur - Client',
       theme: ThemeData(
-        primarySwatch: Colors.green,
+        primarySwatch: Colors.blue,
       ),
-      home: const MainHomeScreen(),
+      home: const ClientMapScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class MainHomeScreen extends StatefulWidget {
-  const MainHomeScreen({super.key});
+class ClientMapScreen extends StatefulWidget {
+  const ClientMapScreen({super.key});
 
   @override
-  State<MainHomeScreen> createState() => _MainHomeScreenState();
+  State<ClientMapScreen> createState() => _ClientMapScreenState();
 }
 
-class _MainHomeScreenState extends State<MainHomeScreen> {
-  int _currentIndex = 0;
+class _ClientMapScreenState extends State<ClientMapScreen> {
+  GoogleMapController? _mapController;
+  LatLng _currentPosition = const LatLng(5.3600, -4.0083); // Position par défaut (Abidjan)
+  bool _isLoadingLocation = true;
+  Set<Marker> _markers = {};
+  
+  final TextEditingController _destinationController = TextEditingController(text: "Plateche, Abidjan");
 
-  final List<Widget> _pages = [
-    const TransportTab(),
-    const MarketTab(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _determinePosition();
+  }
+
+  // Fonction pour récupérer la position GPS réelle de l'appareil
+  Future<void> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      setState(() => _isLoadingLocation = false);
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        setState(() => _isLoadingLocation = false);
+        return;
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      setState(() => _isLoadingLocation = false);
+      return;
+    }
+
+    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    
+    setState(() {
+      _currentPosition = LatLng(position.latitude, position.longitude);
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('current_location'),
+          position: _currentPosition,
+          infoWindow: const InfoWindow(title: 'Ma position actuelle'),
+        ),
+      );
+      _isLoadingLocation = false;
+    });
+
+    _mapController?.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: _currentPosition, zoom: 15),
+      ),
+    );
+  }
+
+  // Envoyer la commande de course au serveur API
+  Future<void> _commanderCourse() async {
+    try {
+      final response = await http.post(
+        Uri.parse('${Config.serveurUrl}/api/rides'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'clientName': 'Client Test',
+          'pickup': '${_currentPosition.latitude}, ${_currentPosition.longitude}',
+          'destination': _destinationController.text,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Course commandée avec succès ! Recherche d\'un chauffeur...')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur lors de la commande')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur réseau : $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentIndex == 0 ? 'Transport & VTC' : 'Marché & E-commerce'),
-        backgroundColor: Colors.green[700],
+        title: const Text('La Paix du Cœur - Commande'),
+        backgroundColor: Colors.blueAccent,
       ),
-      body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car),
-            label: 'Transport',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.store),
-            label: 'Marché',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class TransportTab extends StatelessWidget {
-  const TransportTab({super.key});
-
-  void _onServiceTap(BuildContext context, String serviceName) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Commander : $serviceName'),
-          content: Text('Voulez-vous rechercher un chauffeur disponible pour une $serviceName ?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700]),
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Recherche d’un $serviceName en cours...')),
-                );
-              },
-              child: const Text('Confirmer', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: Stack(
         children: [
-          Text('Serveur : ${Config.serveurUrl}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          const SizedBox(height: 10),
-          const Text('Choisissez votre service :', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              children: [
-                ServiceTile(
-                  title: 'Taxi',
-                  icon: Icons.local_taxi,
-                  color: Colors.amber,
-                  onTap: () => _onServiceTap(context, 'Taxi'),
+          // Affichage de Google Maps
+          GoogleMap(
+            onMapCreated: (controller) => _mapController = controller,
+            initialCameraPosition: CameraPosition(
+              target: _currentPosition,
+              zoom: 14.0,
+            ),
+            markers: _markers,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: true,
+          ),
+          
+          // Indicateur de chargement GPS
+          if (_isLoadingLocation)
+            Container(
+              color: Colors.black45,
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            ),
+
+          // Panneau inférieur pour commander la course
+          Positioned(
+            bottom: 20,
+            left: 20,
+            right: 20,
+            child: Card(
+              elevation: 6,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Où allons-nous ?',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _destinationController,
+                      decoration: InputDecoration(
+                        labelText: 'Destination',
+                        prefixIcon: const Icon(Icons.location_on, color: Colors.red),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: _commanderCourse,
+                        child: const Text(
+                          'Commander un Chauffeur',
+                          style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                ServiceTile(
-                  title: 'Course',
-                  icon: Icons.directions_run,
-                  color: Colors.blue,
-                  onTap: () => _onServiceTap(context, 'Course'),
-                ),
-                ServiceTile(
-                  title: 'Livraison',
-                  icon: Icons.local_shipping,
-                  color: Colors.orange,
-                  onTap: () => _onServiceTap(context, 'Livraison'),
-                ),
-              ],
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class MarketTab extends StatelessWidget {
-  const MarketTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final categories = ['Alimentaire', 'Vestimentaire', 'Téléphones', 'Accessoires', 'Location Sono'];
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: categories.length,
-      itemBuilder: (context, index) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: const Icon(Icons.shopping_bag, color: Colors.green),
-            title: Text(categories[index], style: const TextStyle(fontWeight: FontWeight.bold)),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Ouverture du rayon : ${categories[index]}')),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-}
-
-class ServiceTile extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const ServiceTile({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: color.withOpacity(0.2),
-              child: Icon(icon, size: 28, color: color),
-            ),
-            const SizedBox(height: 10),
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
       ),
     );
   }
