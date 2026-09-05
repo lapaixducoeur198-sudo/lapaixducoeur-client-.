@@ -23,10 +23,11 @@ jobs:
         run: |
           flutter create . --org com.lapaixducoeur --project-name lapaixducoeur_client --platforms=android
 
-      - name: Write pubspec.yaml
+      - name: Generate Files via Python
         run: |
-          cat << 'EOF' > pubspec.yaml
-          name: lapaixducoeur_client
+          python3 -c "
+          with open('pubspec.yaml', 'w') as f:
+              f.write('''name: lapaixducoeur_client
           description: A new Flutter project.
           publish_to: 'none'
           version: 1.0.0+1
@@ -49,13 +50,18 @@ jobs:
 
           flutter:
             uses-material-design: true
-          EOF
+          ''')
 
-      - name: Write main.dart
-        run: |
-          mkdir -p lib
-          cat << 'EOF' > lib/main.dart
-          import 'package:flutter/material.dart';
+          import os
+          os.makedirs('lib', exist_ok=True)
+
+          with open('lib/config.dart', 'w') as f:
+              f.write('''class Config {
+            static const String serveurUrl = 'https://api.lapaixducoeur.com';
+          }''')
+
+          with open('lib/main.dart', 'w') as f:
+              f.write('''import 'package:flutter/material.dart';
           import 'package:flutter_map/flutter_map.dart';
           import 'package:latlong2/latlong.dart';
           import 'package:geolocator/geolocator.dart';
@@ -74,9 +80,7 @@ jobs:
             Widget build(BuildContext context) {
               return MaterialApp(
                 title: 'La Paix du Cœur - Client',
-                theme: ThemeData(
-                  primarySwatch: Colors.blue,
-                ),
+                theme: ThemeData(primarySwatch: Colors.blue),
                 home: const ClientMapScreen(),
                 debugShowCheckedModeBanner: false,
               );
@@ -103,16 +107,13 @@ jobs:
             }
 
             Future<void> _determinePosition() async {
-              bool serviceEnabled;
-              LocationPermission permission;
-
-              serviceEnabled = await Geolocator.isLocationServiceEnabled();
+              bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
               if (!serviceEnabled) {
                 setState(() => _isLoadingLocation = false);
                 return;
               }
 
-              permission = await Geolocator.checkPermission();
+              LocationPermission permission = await Geolocator.checkPermission();
               if (permission == LocationPermission.denied) {
                 permission = await Geolocator.requestPermission();
                 if (permission == LocationPermission.denied) {
@@ -122,7 +123,6 @@ jobs:
               }
 
               Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-              
               setState(() {
                 _currentPosition = LatLng(position.latitude, position.longitude);
                 _isLoadingLocation = false;
@@ -136,11 +136,11 @@ jobs:
             Future<void> _commanderCourse() async {
               try {
                 final response = await http.post(
-                  Uri.parse('${Config.serveurUrl}/api/rides'),
+                  Uri.parse('\${Config.serveurUrl}/api/rides'),
                   headers: {'Content-Type': 'application/json'},
                   body: jsonEncode({
                     'clientName': 'Client Test',
-                    'pickup': '${_currentPosition.latitude}, ${_currentPosition.longitude}',
+                    'pickup': '\${_currentPosition.latitude}, \${_currentPosition.longitude}',
                     'destination': _destinationController.text,
                   }),
                 );
@@ -152,7 +152,7 @@ jobs:
                 }
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Erreur : $e')),
+                  SnackBar(content: Text('Erreur : \$e')),
                 );
               }
             }
@@ -239,15 +239,8 @@ jobs:
               );
             }
           }
-          EOF
-
-      - name: Write config.dart
-        run: |
-          cat << 'EOF' > lib/config.dart
-          class Config {
-            static const String serveurUrl = 'https://api.lapaixducoeur.com';
-          }
-          EOF
+          ''')
+          "
 
       - name: Install Dependencies
         run: flutter pub get
