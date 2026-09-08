@@ -1,3 +1,4 @@
+
 name: Build Client APK
 
 on:
@@ -17,7 +18,7 @@ jobs:
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
-          cache: true
+          cache: false
 
       - name: Create Clean Flutter Project in Temp Folder
         run: |
@@ -27,11 +28,13 @@ jobs:
           cp -r temp_app/web ./ 2>/dev/null || true
           rm -rf temp_app
 
-      - name: Force SDK Versions in build.gradle
+      - name: Force SDK and Kotlin Versions in build.gradle
         run: |
           python3 -c "
           import glob
-          for path in glob.glob('android/**/build.gradle', recursive=True):
+
+          # 1. Mise à jour de android/app/build.gradle (minSdk et compileSdk)
+          for path in glob.glob('android/app/build.gradle'):
               with open(path, 'r') as f:
                   content = f.read()
               content = content.replace('minSdkVersion flutter.minSdkVersion', 'minSdkVersion 28')
@@ -40,7 +43,23 @@ jobs:
               content = content.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 34')
               with open(path, 'w') as f:
                   f.write(content)
-          print('Versions SDK et Kotlin harmonisées.')
+
+          # 2. Mise à jour ou ajout de la version Kotlin dans android/build.gradle racine
+          root_gradle = 'android/build.gradle'
+          with open(root_gradle, 'r') as f:
+              root_content = f.read()
+
+          if 'ext.kotlin_version' in root_content:
+              import re
+              root_content = re.sub(r'ext\.kotlin_version\s*=\s*[\"\'].*?[\"\']', 'ext.kotlin_version = \"1.9.0\"', root_content)
+          else:
+              # Si la variable n'existe pas, on l'ajoute au début du fichier
+              root_content = 'buildscript { ext.kotlin_version = \"1.9.0\" }\n' + root_content
+
+          with open(root_gradle, 'w') as f:
+              f.write(root_content)
+
+          print('Configuration SDK et Kotlin forcée avec succès.')
           "
 
       - name: Update pubspec.yaml Dependencies
