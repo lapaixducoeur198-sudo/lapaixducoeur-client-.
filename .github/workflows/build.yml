@@ -27,11 +27,27 @@ jobs:
           cp -r temp_app/web ./ 2>/dev/null || true
           rm -rf temp_app
 
-      - name: Force Min SDK Version to 28
+      - name: Force Min SDK Version in build.gradle
         run: |
-          # Modifie directement le fichier build.gradle pour fixer le minSdkVersion à 28
-          FILE="android/app/build.gradle"
-          sed -i 's/minSdkVersion.*/minSdkVersion 28/g' $FILE
+          # Utilisation de Python pour remplacer proprement minSdkVersion par 28 dans le fichier Gradle
+          python3 -c "
+          file_path = 'android/app/build.gradle'
+          with open(file_path, 'r') as f:
+              content = f.read()
+
+          # Remplace minSdk = flutter.minSdkVersion ou minSdkVersion flutter.minSdkVersion par 28
+          new_content = content.replace('minSdkVersion flutter.minSdkVersion', 'minSdkVersion 28')
+          new_content = new_content.replace('minSdk = flutter.minSdkVersion', 'minSdk = 28')
+          
+          # Si ce n'est pas trouvé, on cherche avec une expression régulière
+          import re
+          new_content = re.sub(r'minSdkVersion\s+.*', 'minSdkVersion 28', new_content)
+          new_content = re.sub(r'minSdk\s*=\s*.*', 'minSdk = 28', new_content)
+
+          with open(file_path, 'w') as f:
+              f.write(new_content)
+          print('minSdkVersion forcé à 28 avec succès.')
+          "
 
       - name: Update pubspec.yaml Dependencies
         run: |
