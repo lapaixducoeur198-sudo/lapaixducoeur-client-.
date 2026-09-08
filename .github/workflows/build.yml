@@ -19,35 +19,26 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Create Clean Flutter Project in Temp Folder
+      - name: Create Clean Project with SDK 28
         run: |
           flutter create temp_app --org com.lapaixducoeur --project-name lapaixducoeur_client --platforms=android
+          
+          # Force directement minSdkVersion à 28 dans le fichier local android
+          python3 -c "
+          import os, glob
+          for path in glob.glob('temp_app/android/**/build.gradle', recursive=True):
+              with open(path, 'r') as f:
+                  content = f.read()
+              content = content.replace('minSdkVersion flutter.minSdkVersion', 'minSdkVersion 28')
+              content = content.replace('minSdk = flutter.minSdkVersion', 'minSdk = 28')
+              with open(path, 'w') as f:
+                  f.write(content)
+          "
+          
           cp -r temp_app/android ./
           cp -r temp_app/ios ./ 2>/dev/null || true
           cp -r temp_app/web ./ 2>/dev/null || true
           rm -rf temp_app
-
-      - name: Force Min SDK Version in build.gradle
-        run: |
-          # Utilisation de Python pour remplacer proprement minSdkVersion par 28 dans le fichier Gradle
-          python3 -c "
-          file_path = 'android/app/build.gradle'
-          with open(file_path, 'r') as f:
-              content = f.read()
-
-          # Remplace minSdk = flutter.minSdkVersion ou minSdkVersion flutter.minSdkVersion par 28
-          new_content = content.replace('minSdkVersion flutter.minSdkVersion', 'minSdkVersion 28')
-          new_content = new_content.replace('minSdk = flutter.minSdkVersion', 'minSdk = 28')
-          
-          # Si ce n'est pas trouvé, on cherche avec une expression régulière
-          import re
-          new_content = re.sub(r'minSdkVersion\s+.*', 'minSdkVersion 28', new_content)
-          new_content = re.sub(r'minSdk\s*=\s*.*', 'minSdk = 28', new_content)
-
-          with open(file_path, 'w') as f:
-              f.write(new_content)
-          print('minSdkVersion forcé à 28 avec succès.')
-          "
 
       - name: Update pubspec.yaml Dependencies
         run: |
