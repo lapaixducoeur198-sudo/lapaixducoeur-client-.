@@ -15,7 +15,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.16.0'
+          flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
@@ -29,7 +29,6 @@ jobs:
 
       - name: Force SDK Versions in build.gradle
         run: |
-          # Force minSdkVersion à 28 et compileSdkVersion à 34 pour satisfaire les dépendances
           python3 -c "
           import glob
           for path in glob.glob('android/**/build.gradle', recursive=True):
@@ -41,7 +40,7 @@ jobs:
               content = content.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 34')
               with open(path, 'w') as f:
                   f.write(content)
-          print('Versions SDK mises à jour avec succès.')
+          print('Versions SDK et Kotlin harmonisées.')
           "
 
       - name: Update pubspec.yaml Dependencies
