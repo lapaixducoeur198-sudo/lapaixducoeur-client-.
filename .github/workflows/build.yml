@@ -19,26 +19,18 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Create Clean Project with SDK 28
+      - name: Create Clean Flutter Project in Temp Folder
         run: |
           flutter create temp_app --org com.lapaixducoeur --project-name lapaixducoeur_client --platforms=android
-          
-          # Force directement minSdkVersion à 28 dans le fichier local android
-          python3 -c "
-          import os, glob
-          for path in glob.glob('temp_app/android/**/build.gradle', recursive=True):
-              with open(path, 'r') as f:
-                  content = f.read()
-              content = content.replace('minSdkVersion flutter.minSdkVersion', 'minSdkVersion 28')
-              content = content.replace('minSdk = flutter.minSdkVersion', 'minSdk = 28')
-              with open(path, 'w') as f:
-                  f.write(content)
-          "
-          
           cp -r temp_app/android ./
           cp -r temp_app/ios ./ 2>/dev/null || true
           cp -r temp_app/web ./ 2>/dev/null || true
           rm -rf temp_app
+
+      - name: Force Min SDK Version to 28 in local.properties
+        run: |
+          # Force la version minimale d'Android à 28 via le fichier de configuration local
+          echo "flutter.minSdkVersion=28" >> android/local.properties
 
       - name: Update pubspec.yaml Dependencies
         run: |
