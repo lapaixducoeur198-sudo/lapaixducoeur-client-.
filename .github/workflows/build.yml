@@ -27,10 +27,22 @@ jobs:
           cp -r temp_app/web ./ 2>/dev/null || true
           rm -rf temp_app
 
-      - name: Force Min SDK Version to 28 in local.properties
+      - name: Force SDK Versions in build.gradle
         run: |
-          # Force la version minimale d'Android à 28 via le fichier de configuration local
-          echo "flutter.minSdkVersion=28" >> android/local.properties
+          # Force minSdkVersion à 28 et compileSdkVersion à 34 pour satisfaire les dépendances
+          python3 -c "
+          import glob
+          for path in glob.glob('android/**/build.gradle', recursive=True):
+              with open(path, 'r') as f:
+                  content = f.read()
+              content = content.replace('minSdkVersion flutter.minSdkVersion', 'minSdkVersion 28')
+              content = content.replace('minSdk = flutter.minSdkVersion', 'minSdk = 28')
+              content = content.replace('compileSdkVersion flutter.compileSdkVersion', 'compileSdkVersion 34')
+              content = content.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 34')
+              with open(path, 'w') as f:
+                  f.write(content)
+          print('Versions SDK mises à jour avec succès.')
+          "
 
       - name: Update pubspec.yaml Dependencies
         run: |
